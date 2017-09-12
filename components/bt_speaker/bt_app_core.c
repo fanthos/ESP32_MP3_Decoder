@@ -77,12 +77,17 @@ static void bt_app_work_dispatched(bt_app_msg_t *msg)
         msg->cb(msg->event, msg->param);
     }
 }
+extern volatile int taskstatus;
+extern volatile int taskcounter;
 
 static void bt_app_task_handler(void *arg)
 {
     bt_app_msg_t msg;
     for (;;) {
+        taskstatus = 1;
         if (pdTRUE == xQueueReceive(bt_app_task_queue, &msg, (portTickType)portMAX_DELAY)) {
+            taskcounter++;
+            taskstatus = 2;
             ESP_LOGI(BT_APP_CORE_TAG, "%s, sig 0x%x, 0x%x", __func__, msg.sig, msg.event);
             switch (msg.sig) {
             case BT_APP_SIG_WORK_DISPATCH:
@@ -97,6 +102,7 @@ static void bt_app_task_handler(void *arg)
                 free(msg.param);
             }
         }
+        taskstatus = 0;
     }
 }
 
