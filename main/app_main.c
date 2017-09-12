@@ -23,6 +23,7 @@
 #include "wifi.h"
 #include "app_main.h"
 #include "mdns_task.h"
+//#undef CONFIG_BT_SPEAKER_MODE
 #ifdef CONFIG_BT_SPEAKER_MODE
 #include "bt_speaker.h"
 #endif
@@ -40,7 +41,8 @@
 #define PRIO_MQTT configMAX_PRIORITIES - 3
 #define PRIO_CONNECT configMAX_PRIORITIES -1
 
-
+int taskstatus = 0;
+int taskcounter = 0;
 
 static void init_hardware()
 {
@@ -125,13 +127,21 @@ static void start_web_radio()
     web_radio_start(radio_config);
 }
 
+static void memory_logger(void* p) 
+{
+    while(1) {
+        ESP_LOGI(TAG, "RAM left %d, %d, %d", esp_get_free_heap_size(), taskstatus, taskcounter);
+        vTaskDelay(50);
+    }
+}
+
 /**
  * entry point
  */
 void app_main()
 {
     ESP_LOGI(TAG, "starting app_main()");
-    ESP_LOGI(TAG, "RAM left: %u", esp_get_free_heap_size());
+    // ESP_LOGI(TAG, "RAM left: %u", esp_get_free_heap_size());
 
     init_hardware();
 
@@ -142,6 +152,8 @@ void app_main()
     start_web_radio();
 #endif
 
-    ESP_LOGI(TAG, "RAM left %d", esp_get_free_heap_size());
+    // ESP_LOGI(TAG, "RAM left %d", esp_get_free_heap_size());
     // ESP_LOGI(TAG, "app_main stack: %d\n", uxTaskGetStackHighWaterMark(NULL));
+
+    xTaskCreate(memory_logger, "memory_logger", 2048, NULL, 0, NULL);
 }
